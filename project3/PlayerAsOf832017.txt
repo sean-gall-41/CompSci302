@@ -1,0 +1,38 @@
+
+public class Player {
+
+	//private boolean isHuman;
+	private int numStrikes;
+	private char guess;
+	private boolean isHuman;
+	
+	
+	public int getNumStrikes() {
+		return this.numStrikes;
+	}
+	
+	public void setNumStrikes(int newStrikeNum) {
+		this.numStrikes = newStrikeNum;
+	}
+	
+	public void decrementStrikes() {
+		this.numStrikes--;
+	}
+	
+	public char getGuess() {
+		return this.guess;
+	}
+	
+	public void setGuess(char newGuess) {
+		this.guess = newGuess;
+	}
+	
+	public boolean getIsHuman() {
+		return this.isHuman;
+	}
+	
+	public void setIsHuman(boolean trueOrFalse) {
+		this.isHuman = trueOrFalse;
+	}
+	
+}

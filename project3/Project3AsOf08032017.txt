@@ -1,0 +1,238 @@
+import java.util.Scanner;
+import java.util.Random;
+//import java.util.Arrays;
+import java.util.ArrayList;
+import java.io.FileInputStream;
+import java.io.IOException;
+//import java.io.File;
+
+public class Project3 {
+	//FIXME: Add max letter final, entry scanner, and boolean smart (implementation?) for milestone2
+	public static Scanner kybScnr = new Scanner(System.in);
+	public static Scanner entryScnr;
+	public static Scanner inFS;
+	public static int SEED = 777;
+	public static Random rangen = new Random(SEED); 
+	
+	//https://en.wikipedia.org/wiki/Letter_frequency
+		public final static double[] LETTER_FREQ = {8.167, 1.492, 2.782, 4.253, 12.702, 2.228, 2.015, 6.094,
+				6.966, 0.153, 0.772, 4.025, 2.406, 6.749, 7.507, 1.929, 0.095, 5.987, 6.327, 9.056, 
+				2.758, 0.978, 2.360, 0.150, 1.974, 0.074};
+		
+		public final static char[] ENG_LETTERS = {'A' , 'B' , 'C' , 'D' , 'E' , 'F' , 'G' , 'H' , 'I' , 'J' , 'K' , 'L' ,
+				'M' , 'N' , 'O' , 'P' , 'Q' , 'R' , 'S' , 'T' , 'U' , 'V' , 'W' , 'X' , 'Y' , 'Z'};
+
+		//FIXME:Choose either array or arraylist to store input values from words.txt
+	public static void main(String[] args) throws IOException {
+		String humanInput = "" , aiWord = "" , temp;
+		char guess;
+		double sum1 , sum2 , probOfGuess;
+		boolean isGuesser , won; //might want to initialize somewhere else
+		int turnNum , gameNum , numLett , inputAsInt; 
+		//System.out.println(new File("words.txt").getAbsolutePath());
+		//File wordsTxt = new File("words.txt");
+		String[] wordFileContents = new String[127092];
+		double[] weightedFreq = new double[26];
+		ArrayList<Character> secretWordLett = new ArrayList<Character>(); //initially shows asterisk in each letter position of chosen word, and reveals as correct letters are guessed
+		ArrayList<Character> charGuessed = new ArrayList<Character>();  //stores the letters guessed in a given game
+		ArrayList<Character> charOfAIWord = new ArrayList<Character>();  //parses chosen word and stores each letter as an entry
+		ArrayList<Integer> indexOfGuess = new ArrayList<Integer>();  //used to store the index of a guess every turn
+		//ArrayList<String> wordsContents = new ArrayList<String>();
+		FileInputStream fileByteStream = new FileInputStream("words.txt");
+		Scanner inFS = new Scanner(fileByteStream);
+		int i = 0;
+		while(inFS.hasNext()) {
+			wordFileContents[i] = inFS.nextLine();
+			i++;
+			//wordsContents.add(inFS.nextLine());	
+		}
+		//System.out.println(wordsContents.get(9));
+		//System.out.println(wordsContents.size());
+		//System.out.println(wordsContents[wordsContents.length - 1]); (A test to see if our array got every word from words.txt
+		fileByteStream.close();
+		//Close 8-bit input stream as we have everything we need from it
+		//Put player dec/init elsewhere?
+		Player guesser = new Player();
+		Player chooser = new Player();
+		
+		//Begin game
+		System.out.print("Do you wish to be the word [C]hooser or the word [G]uesser:");
+		humanInput = kybScnr.next();
+		
+		if (Character.toUpperCase(humanInput.charAt(0)) == 'G') {
+			isGuesser = true;
+			guesser.setIsHuman(true);
+			chooser.setIsHuman(false);
+			
+		}
+		else if (Character.toUpperCase(humanInput.charAt(0)) == 'C') {
+			isGuesser = false;
+			chooser.setIsHuman(true);
+			guesser.setIsHuman(false);
+		}
+		if (chooser.getIsHuman()) {
+			System.out.print("How many letters are in your chosen word: ");
+			numLett = kybScnr.nextInt();
+			kybScnr.nextLine();
+		}
+		else {
+			aiWord = wordFileContents[rangen.nextInt(127092)];
+			numLett = aiWord.length();
+			for (int j = 0 ; j < numLett ; j++) {
+				charOfAIWord.add(aiWord.charAt(j)); //At this point charOFAIWord is filled with LOWERCASE letters of aiWord
+			}
+		}
+		//System.out.println(charOfAIWord);
+		gameNum = 1;
+		turnNum = 1;
+		guesser.setNumStrikes(10);
+		//FIXME: change location of initializations and add while loop to before chooser or guesser prompt for milestone2
+		won = false;
+		
+		//FIXME:Need outer loop for multiple games, also an if else block if first GAME (possibly) for milestone2
+
+		while (!won && guesser.getNumStrikes() != 0) {
+			
+			if (turnNum == 1) {
+				System.out.print("No letters guessed yet.\nNo strikes yet -- all " + guesser.getNumStrikes() + " still remaining.\nWord revealed thus far: ");
+				for(int j = 0 ; j < numLett ; j++) {
+					secretWordLett.add('*');
+					System.out.print(secretWordLett.get(j) + " ");
+				}
+				System.out.println();
+			}
+			else {
+				System.out.print("Letters guessed so far: ");
+				for (int j = 0 ; j < charGuessed.size(); j++) {
+					System.out.print(charGuessed.get(j) + " ");
+				}
+				System.out.println();
+				if (guesser.getNumStrikes() == 10) {
+					System.out.println("No strikes yet -- all " + guesser.getNumStrikes() + " still remaining.");
+				}
+				else {
+					System.out.println("Guesser currently has " + (10 - guesser.getNumStrikes()) + " strikes (" + guesser.getNumStrikes() + " to go until automatic loss)");
+				}
+				System.out.print("Word revealed thus far: ");
+				for(int j = 0 ; j < numLett ; j++) {
+					System.out.print(secretWordLett.get(j) + " ");
+				}
+				System.out.println();
+			}
+			
+			if (guesser.getIsHuman()) {
+				System.out.print("Enter a letter: "); 
+				humanInput = kybScnr.next();
+				guess = Character.toLowerCase(humanInput.charAt(0));
+				if (charOfAIWord.contains(guess)) {
+					charGuessed.add(Character.toUpperCase(guess));
+					for (int j = 0 ; j < numLett ; j++) {
+						if (guess == charOfAIWord.get(j)) {
+							secretWordLett.set(j, Character.toUpperCase(guess));
+							indexOfGuess.add(j + 1);
+						}
+					}
+					System.out.print("The letter '" + guess + "' is at positions: ");
+					System.out.print(indexOfGuess +"\n");
+					indexOfGuess.clear();
+				}
+				else {
+					System.out.println("The letter '" + guess + "' is not in the word -- Strike!");
+					guesser.incrementStrikes();
+					charGuessed.add(Character.toLowerCase(guess));
+					
+				}
+				if (!secretWordLett.contains('*')) {
+					won = true;
+				}
+				turnNum++;
+			}
+			else {
+				//NOTE: this loop creates the sum of available letters to the guesser
+				sum1 = 0;
+				sum2 = 0;
+				for (int j = 0 ; j < 26 ; j++) {
+					if (charGuessed.isEmpty()) {
+						sum1 += LETTER_FREQ[j];	
+					}
+					else if (charGuessed.contains(ENG_LETTERS[j]) || charGuessed.contains(Character.toLowerCase(ENG_LETTERS[j]))) {
+						continue;
+					}
+					else {
+						sum1 += LETTER_FREQ[j];
+					}
+				}
+				
+				//NOTE:...and this loop sets each entry of weightedFreq[] to the running total of weighted frequencies
+				for (int j = 0 ; j < 26 ; j++) {
+					if (charGuessed.isEmpty()) {
+						weightedFreq[j] = LETTER_FREQ[j] / sum1;
+						sum2 += weightedFreq[j];
+						weightedFreq[j] = sum2;
+					}
+					else {
+						if (charGuessed.contains(ENG_LETTERS[j]) || charGuessed.contains(Character.toLowerCase(ENG_LETTERS[j]))) { //NOTE: if they are equal, then nothing happens to that value: be careful of how this affects probability 
+							weightedFreq[j] = 0;
+						}
+						else {
+							weightedFreq[j] = LETTER_FREQ[j] / sum1;
+							sum2 += weightedFreq[j];
+							weightedFreq[j] = sum2;
+						}
+					}
+				}
+				int l = 0;
+				probOfGuess = rangen.nextDouble();
+				while (probOfGuess > weightedFreq[l]) {
+					l++;
+				}
+				guess = ENG_LETTERS[l];
+				System.out.println("\nThe computer chooses '" + Character.toLowerCase(guess) + "' for its turn.");
+				System.out.print("Enter locations that computer's guess appears in your word (0 if none): ");
+				//FIXME: Call some input validation function for milestone 2
+				humanInput = kybScnr.nextLine(); 
+				entryScnr = new Scanner(humanInput);
+				temp = entryScnr.next();
+				inputAsInt = Integer.parseInt(temp);
+				if (inputAsInt == 0) {
+					charGuessed.add(Character.toLowerCase(guess));
+					guesser.incrementStrikes();
+				}
+				else {
+					charGuessed.add(Character.toUpperCase(guess));
+					secretWordLett.set(inputAsInt - 1, guess);
+					while (entryScnr.hasNext()) {
+						temp = entryScnr.next();
+						inputAsInt = Integer.parseInt(temp);
+						secretWordLett.set(inputAsInt - 1, guess);
+					}
+				}
+				if (!secretWordLett.contains('*')) {
+					won = true;
+				}
+				turnNum++;
+//				System.out.println(guess);
+//				break;
+			}
+//			System.out.println(sum);
+//			break;
+		}
+		//One game cycle complete
+		if (won) {
+			System.out.print("\nThe guesser has won by finding the word '");
+			for (int j = 0 ; j < numLett ; j++) {
+				System.out.print(secretWordLett.get(j));
+			}
+			System.out.println("' before the tenth strike.");
+		}
+		else {
+			System.out.println("\nThe guesser has lost by not finding the word before reaching ten strikes.");
+		}
+		gameNum++;
+		//FIXME: create a player reset method for milestone2
+		inFS.close();
+		kybScnr.close();
+		//entryScnr.close();
+	}
+
+}
